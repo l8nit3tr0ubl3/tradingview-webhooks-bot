@@ -36,6 +36,7 @@ def webhook():
             return '', 200
         else:
             abort(403)
+        #ADD TELEGRAM SUPPORT
     else:
         abort(400)
 
