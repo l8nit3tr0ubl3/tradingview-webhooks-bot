@@ -27,12 +27,13 @@ def root():
 def webhook():
     if request.method == 'POST':
         # Parse the string data from tradingview into a python dict
-        data = parse_webhook(request.get_data(as_text=True))
+        data = parse_webhook(request.get_data(as_text=True))[0]
+        tail = parse_webhook(request.get_data(as_text=True))[1]
         # Check that the key is correct
         if get_token() == data['key']:
             print(' [Alert Received] ')
             print('POST Received:', data)
-            send_order(data)
+            send_order(data, tail)
             return '', 200
         else:
             abort(403)
