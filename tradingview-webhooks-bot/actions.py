@@ -10,8 +10,8 @@ def parse_webhook(webhook_data):
     :return: Dictionary version of string.
     """
     head, sep, tail = webhook_data.partition('----')
-    data = ast.literal_eval(head)
-    return data, tail
+    data = ast.literal_eval(tail)
+    return data, head
 
 def calc_price(given_price):
 
