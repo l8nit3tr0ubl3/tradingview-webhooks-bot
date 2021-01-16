@@ -9,9 +9,9 @@ def parse_webhook(webhook_data):
     :param webhook_data: POST data from tradingview, as a string.
     :return: Dictionary version of string.
     """
-
-    data = ast.literal_eval(webhook_data)
-    return data
+    head, sep, tail = webhook_data.partition('----')
+    data = ast.literal_eval(head)
+    return data, tail
 
 
 def calc_price(given_price):
@@ -35,7 +35,7 @@ def SendToTelegram(message):
     r = requests.get(url)
     print(r)
 
-def send_order(data):
+def send_order(data, tail):
 
     """
     This function sends the order to the exchange using ccxt.
@@ -73,10 +73,5 @@ def send_order(data):
     order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
     # This is the last step, the response from the exchange will tell us if it made it and what errors pop up if not.
     print('Exchange Response:', order)
-    message = """
-Symbol:{0}
-Side:{1}
-Bid Price: {2}
-Ask Price: {3}
-Amount: {4}""".format(data['symbol'], data['side'], bid, ask, round(new_amount, 8))
+    message = tail
     SendToTelegram(message)
