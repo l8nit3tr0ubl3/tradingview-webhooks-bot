@@ -13,12 +13,13 @@
 tradingview-webhooks-bot is a trading bot, written in python that allows users to place trades with tradingview's webhook alerts.
 
 ---
-# New Features
--Use '----' as a seperator in Tview alert to allow custom Telegram alerts in same alert.
--Use 'close' as trade amount to send closing market order
--Use 'U' in amount to use USD equivalent for setting size
--Use '%' in amount to use % of available balance for setting size
----
+## New Features 
+
+Use '----' as a seperator in Tview alert to allow custom Telegram alerts in same alert.  
+Use 'close' as trade amount to send closing market order.  
+Use 'U' in amount to use USD equivalent for setting size.  
+Use '%' in amount to use % of available balance for setting size.  
+ 
 
 ## Quickstart Using Pipenv
 
