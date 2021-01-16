@@ -37,8 +37,6 @@ def SendToTelegram(message):
 
 def send_order(data):
 
-    message = str(data)
-    head, sep, tail = message.partition('----')
     """
     This function sends the order to the exchange using ccxt.
     :param data: python dict, with keys as the API parameters.
