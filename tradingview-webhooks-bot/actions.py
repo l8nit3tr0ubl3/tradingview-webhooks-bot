@@ -1,6 +1,6 @@
 import ccxt
 import ast
-
+import requests
 
 def parse_webhook(webhook_data):
 
@@ -12,7 +12,6 @@ def parse_webhook(webhook_data):
     head, sep, tail = webhook_data.partition('----')
     data = ast.literal_eval(head)
     return data, tail
-
 
 def calc_price(given_price):
 
@@ -27,7 +26,6 @@ def calc_price(given_price):
         price = given_price
     return price
 
-
 def SendToTelegram(message):
     API = "" #BotFather API Key
     ID = "-100"  #Name of Channel
@@ -36,7 +34,7 @@ def SendToTelegram(message):
     print(r)
 
 def send_order(data, tail):
-
+    
     """
     This function sends the order to the exchange using ccxt.
     :param data: python dict, with keys as the API parameters.
@@ -55,22 +53,34 @@ def send_order(data, tail):
     orderbook = exchange.fetch_order_book(data['symbol'])
     bid = orderbook['bids'][0][0] if len (orderbook['bids']) > 0 else None
     ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
+    new_amount = data['amount']
     if "%" in data['amount']:
         balance = exchange.fetch_balance()
         balance = float(balance['free']['USD'])
         new_amount = data['amount'].strip('%')
         new_amount = balance * (float(new_amount)/100)
+        if data['side'] == 'sell':
+            new_amount = float(new_amount) / ask
+        if data['side'] == 'buy':
+            new_amount = float(new_amount) / bid
         print(balance, new_amount)
     if "U" in data['amount']:
         new_amount = data['amount'].strip('U')
-    if data['side'] == 'sell':
-        new_amount = float(new_amount) / ask
-    if data['side'] == 'buy':
-        new_amount = float(new_amount) / bid
-    else:
-        new_amount = data['amount']
-    print('Sending:', data['symbol'], data['type'], data['side'], data['amount'], new_amount , calc_price(data['price']))
-    order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
+        if data['side'] == 'sell':
+            new_amount = float(new_amount) / ask
+        if data['side'] == 'buy':
+            new_amount = float(new_amount) / bid
+    if data['amount'] == 'close':
+        trades = exchange.private_get_positions()
+        if trades['result'] is not None:
+            for trade in trades['result']:
+                if data['symbol'] in trade['future']:
+                    trade_size = trade['size']
+                    print('Sending:', data['symbol'], data['type'], data['side'], trade_size)
+                    order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size)
+    elif data['amount'] is not close:
+        print('Sending:', data['symbol'], data['type'], data['side'], data['amount'], new_amount, calc_price(data['price']))
+        order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
     # This is the last step, the response from the exchange will tell us if it made it and what errors pop up if not.
     print('Exchange Response:', order)
     message = tail
