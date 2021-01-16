@@ -45,23 +45,23 @@ def send_order(data):
     })
 
     # Send the order to the exchange, using the values from the tradingview alert.
+    orderbook = exchange.fetch_order_book(data['symbol'])
+    bid = orderbook['bids'][0][0] if len (orderbook['bids']) > 0 else None
+    ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
     if "%" in data['amount']:
         balance = exchange.fetch_balance()
+        balance = float(balance['free']['USD'])
         new_amount = data['amount'].strip('%')
-        new_amount = balance * (new_amount/100)
+        new_amount = balance * (float(new_amount)/100)
+        print(balance, new_amount)
     if "U" in data['amount']:
         new_amount = data['amount'].strip('U')
-        orderbook = exchange.fetch_order_book(data['symbol'])
-        bid = orderbook['bids'][0][0] if len (orderbook['bids']) > 0 else None
-        ask = orderbook['asks'][0][0] if len (orderbook['asks']) > 0 else None
-        if data['side'] == 'sell':
-            new_amount = new_amount / ask
-        if data['side'] == 'buy':
-            new_amount = new_amount / bid
+    if data['side'] == 'sell':
+        new_amount = float(new_amount) / ask
+    if data['side'] == 'buy':
+        new_amount = float(new_amount) / bid
     else:
         new_amount = data['amount']
-    print('Sending:', data['symbol'], data['type'], data['side'], data['amount'], new_amount , calc_price(data['price']))
-    order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
+    print('Sending:', data['symbol'], data['type'], data['side'], data['amount'], new_amount , calc_price(data['price']>    order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
     # This is the last step, the response from the exchange will tell us if it made it and what errors pop up if not.
     print('Exchange Response:', order)
-
