@@ -28,8 +28,17 @@ def calc_price(given_price):
     return price
 
 
+def SendToTelegram(message):
+    API = "" #BotFather API Key
+    ID = "-100"  #Name of Channel
+    url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(API, ID, message)
+    r = requests.get(url)
+    print(r)
+
 def send_order(data):
 
+    message = str(data)
+    head, sep, tail = message.partition('----')
     """
     This function sends the order to the exchange using ccxt.
     :param data: python dict, with keys as the API parameters.
@@ -37,7 +46,7 @@ def send_order(data):
     """
 
     # Replace kraken with your exchange of choice.
-    exchange = ccxt.kraken({
+    exchange = ccxt.ftx({
         # Inset your API key and secrets for exchange in question.
         'apiKey': '',
         'secret': '',
@@ -62,6 +71,14 @@ def send_order(data):
         new_amount = float(new_amount) / bid
     else:
         new_amount = data['amount']
-    print('Sending:', data['symbol'], data['type'], data['side'], data['amount'], new_amount , calc_price(data['price']>    order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
+    print('Sending:', data['symbol'], data['type'], data['side'], data['amount'], new_amount , calc_price(data['price']))
+    order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
     # This is the last step, the response from the exchange will tell us if it made it and what errors pop up if not.
     print('Exchange Response:', order)
+    message = """
+Symbol:{0}
+Side:{1}
+Bid Price: {2}
+Ask Price: {3}
+Amount: {4}""".format(data['symbol'], data['side'], bid, ask, round(new_amount, 8))
+    SendToTelegram(message)
