@@ -9,7 +9,7 @@ expect to update this as much as possible to add features as they become availab
 Until then, if you run into any bugs let me know!
 """
 
-from actions import send_order, parse_webhook
+from actions import send_order, parse_webhook, SendToTelegram
 from auth import get_token
 from flask import Flask, request, abort
 
@@ -33,8 +33,11 @@ def webhook():
         if get_token() == data['key']:
             print(' [Alert Received] ')
             print('POST Received:', data)
-            send_order(data, tail)
-            return '', 200
+            if data is not "None":
+                send_order(data, tail)
+                return '', 200
+            else:
+                SendToTelegram(tail)
         else:
             abort(403)
     else:
