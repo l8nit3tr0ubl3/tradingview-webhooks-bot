@@ -34,8 +34,8 @@ def webhook():
             if get_token() == data['key']:
                 print(' [Alert Received] ')
                 print('POST Received:', data)
-                    send_order(data, tail)
-                    return '', 200
+                send_order(data, tail)
+                return '', 200
             else:
                 abort(403)
         else:
