@@ -49,12 +49,17 @@ def getNewAmount(data):
         balance = float(balance['free']['USD'])
         new_amount = data['amount'].strip('%')
         new_amount = balance * (float(new_amount)/100)
+        if data['side'] == 'sell':
+            new_amount = float(new_amount) / ask
+        if data['side'] == 'buy':
+            new_amount = float(new_amount) / bid
     if "U" in data['amount']:
         new_amount = data['amount'].strip('U')
-    if data['side'] == 'sell':
-        new_amount = float(new_amount) / ask
-    if data['side'] == 'buy':
-        new_amount = float(new_amount) / bid
+        if data['side'] == 'sell':
+            new_amount = float(new_amount) / ask
+        if data['side'] == 'buy':
+            new_amount = float(new_amount) / bid
+
     return new_amount
 
 def send_order(data, tail):
@@ -64,7 +69,7 @@ def send_order(data, tail):
     :param data: python dict, with keys as the API parameters.
     :return: the response from the exchange.
     """
-
+    message = tail
     # Replace kraken with your exchange of choice.
     new_amount = getNewAmount(data)
     if data['amount'] == 'close':
@@ -74,13 +79,18 @@ def send_order(data, tail):
                 if data['symbol'] in trade['future']:
                     trade_size = trade['size']
                     print('*Sending:', data['symbol'], data['type'], data['side'], trade_size, '*')
-                    order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, data['price'])
+                    try:
+                        order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, calc_price(data['price']))
+                        print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
+                    except Exception as e:
+                        message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
     elif data['amount'] != 'close':
         print('*Sending:', data['symbol'], data['type'], data['side'], data['amount'], new_amount)
-        order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, data['price'])
+        try:
+            order = exchange.create_order(data['symbol'], data['type'], data['side'], new_amount, calc_price(data['price']))
+            print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
+        except Exception as e:
+                        message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
     # This is the last step, the response from the exchange will tell us if it made it and what errors pop up if not.
     #print(order)
-    print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
-    message = tail
     SendToTelegram(message)
-    print('*'*60, '\n')
