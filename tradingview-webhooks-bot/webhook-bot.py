@@ -26,26 +26,26 @@ def root():
 @app.route('/webhook', methods=['POST'])
 def webhook():
     if request.method == 'POST':
+        print('*'*60)
         # Parse the string data from tradingview into a python dict
         data = parse_webhook(request.get_data(as_text=True))[0]
         tail = parse_webhook(request.get_data(as_text=True))[1]
         if data['type'] != "Skip":
             # Check that the key is correct
             if get_token() == data['key']:
-                print('*'*60)
                 print(' [Alert Received] ')
                 print('POST Received:', data)
                 send_order(data, tail)
                 return '', 200
             else:
-                abort(403)
+                pass
+                #abort(403)
         else:
-            print('*'*60)
             SendToTelegram(tail)
-            print('*'*60, '/n')
             return '', 200
     else:
         abort(400)
+    print('*'*60, '/n')
 
 
 if __name__ == '__main__':
