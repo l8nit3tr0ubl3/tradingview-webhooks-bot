@@ -12,6 +12,8 @@ Until then, if you run into any bugs let me know!
 from actions import send_order, parse_webhook, SendToTelegram
 from auth import get_token
 from flask import Flask, request, abort
+import config as config
+import ccxt
 
 # Create Flask object called app.
 app = Flask(__name__)
@@ -35,12 +37,17 @@ def webhook():
             if get_token() == data['key']:
                 print(' [Alert Received] ')
                 print('POST Received:', data)
-                send_order(data, tail)
+                for account, AccountInfo in config.Accounts.items():
+                        exchange = ccxt.ftx({'apiKey': AccountInfo['EXCHANGEAPI'], 'secret': AccountInfo['EXCHANGESECRET'], 'enableRateLimit': True,})
+                        send_order(data, tail, exchange, AccountInfo['Name'])
+                SendToTelegram(tail)
                 return '', 200
             else:
-                pass
-                #abort(403)
+                #pass
+                abort(403)
         else:
+            print(' [ALERT ONLY - NO TRADE] ')
+            print(tail)
             SendToTelegram(tail)
             return '', 200
     else:
