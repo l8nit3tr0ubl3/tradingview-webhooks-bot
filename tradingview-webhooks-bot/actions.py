@@ -37,17 +37,14 @@ def getNewAmount(data, exchange):
     bid = ticker['bid']
     ask = ticker['ask']
     new_amount = 0.0
-    if "%" in data['amount']:
-        balance = exchange.fetch_balance()
-        balance = float(balance['free']['USD'])
-        new_amount = data['amount'].strip('%')
-        new_amount = balance * (float(new_amount)/100)
-        if data['side'] == 'sell':
-            new_amount = float(new_amount) / ask
-        if data['side'] == 'buy':
-            new_amount = float(new_amount) / bid
-    if "U" in data['amount']:
-        new_amount = data['amount'].strip('U')
+    if isinstance(data['amount'], float) == False:
+        if "%" in data['amount']:
+            new_amount = data['amount'].strip('%')
+            balance = exchange.fetch_balance()
+            balance = float(balance['free']['USD'])
+            new_amount = balance * (float(new_amount)/100)
+        if "U" in data['amount']:
+            new_amount = data['amount'].strip('U')
         if data['side'] == 'sell':
             new_amount = float(new_amount) / ask
         if data['side'] == 'buy':
@@ -65,7 +62,6 @@ def send_order(data, tail, exchange, BotId):
     :return: the response from the exchange.
     """
     message = tail
-    new_amount = getNewAmount(data, exchange)
     if data['amount'] == 'close':
         trades = exchange.private_get_positions()
         for trade in trades['result']:
@@ -74,7 +70,7 @@ def send_order(data, tail, exchange, BotId):
                    message = "No trade open to close, trade not sent. {0}".format(message)
                else:
                    trade_size = trade['size']
-                   print('*Sending:', BotId, data['symbol'], data['type'], data['side'], trade_size)
+                   print('*Sending:', BotId, data['type'], data['side'], trade_size , data['symbol'])
                    try:
                        order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, float(data['price']))
                        print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
@@ -83,7 +79,8 @@ def send_order(data, tail, exchange, BotId):
                         print(e, message)
 
     elif data['amount'] != 'close':
-        print('*Sending:', BotId, data['symbol'], data['type'], data['side'], data['amount'], new_amount)            
+        new_amount = getNewAmount(data, exchange)
+        print('*Sending:', BotId, data['type'], data['side'], data['amount'], new_amount, data['symbol'])            
         try:
             order = exchange.create_order(data['symbol'], data['type'], data['side'], float(new_amount), float(data['price']))
             print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
