@@ -2,14 +2,6 @@ import ccxt
 import ast
 import requests
 import config as config
-from ccxt.base.decimal_to_precision import ROUND, DECIMAL_PLACES
-
-exchange = ccxt.ftx({
-        # Inset your API key and secrets for exchange in question.
-        'apiKey': config.EXCHANGEAPI,
-        'secret': config.EXCHANGESECRET,
-        'enableRateLimit': True,
-    })
 
 def parse_webhook(webhook_data):
 
@@ -40,7 +32,7 @@ def SendToTelegram(message):
     r = requests.get(url)
     print(r)
 
-def getNewAmount(data):
+def getNewAmount(data, exchange):
     ticker = exchange.fetch_ticker(data['symbol'])
     bid = ticker['bid']
     ask = ticker['ask']
@@ -65,7 +57,7 @@ def getNewAmount(data):
 
     return new_amount
 
-def send_order(data, tail):
+def send_order(data, tail, exchange, BotId):
     
     """
     This function sends the order to the exchange using ccxt.
@@ -73,7 +65,7 @@ def send_order(data, tail):
     :return: the response from the exchange.
     """
     message = tail
-    new_amount = getNewAmount(data)
+    new_amount = getNewAmount(data, exchange)
     if data['amount'] == 'close':
         trades = exchange.private_get_positions()
         for trade in trades['result']:
@@ -82,7 +74,7 @@ def send_order(data, tail):
                    message = "No trade open to close, trade not sent. {0}".format(message)
                else:
                    trade_size = trade['size']
-                   print('*Sending:', data['symbol'], data['type'], data['side'], trade_size)
+                   print('*Sending:', BotId, data['symbol'], data['type'], data['side'], trade_size)
                    try:
                        order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, float(data['price']))
                        print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
@@ -91,14 +83,10 @@ def send_order(data, tail):
                         print(e, message)
 
     elif data['amount'] != 'close':
-        print('*Sending:', data['symbol'], data['type'], data['side'], float(data['amount']), new_amount)            
+        print('*Sending:', BotId, data['symbol'], data['type'], data['side'], data['amount'], new_amount)            
         try:
             order = exchange.create_order(data['symbol'], data['type'], data['side'], float(new_amount), float(data['price']))
             print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
         except Exception as e:
             message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
             print(e, message)
-    # This is the last step, the response from the exchange will tell us if it made it and what errors pop up if not.
-    #print(order)
-    SendToTelegram(message)
-
