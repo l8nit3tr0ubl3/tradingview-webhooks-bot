@@ -27,13 +27,14 @@ def calc_price(given_price):
         price = given_price
     return price
 
-def SendToTelegram(message):
-    if UseTelegram == True:
-        url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(config.API, config.ID, message)
-        r = requests.get(url)
-        print(r)
-    else:
-        pass
+def SendToTelegram(message, data):
+    for Bot, BotInfo in config.TelegramAccounts.items():
+        if data['TelegramName'] in BotInfo['Name']:
+            url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(BotInfo['API'],BotInfo['ID'], message)
+            r = requests.get(url)
+            print(r)
+        else:
+            pass
 
 def getNewAmount(data, exchange):
     ticker = exchange.fetch_ticker(data['symbol'])
@@ -65,29 +66,32 @@ def send_order(data, tail, exchange, BotId):
     :return: the response from the exchange.
     """
     message = tail
-    if data['amount'] == 'close':
-        trades = exchange.private_get_positions()
-        for trade in trades['result']:
-            if data['symbol'] in trade['future']:
-               if trade['size'] == 0.0:
-                   message = "No trade open to close, trade not sent. {0}".format(message)
-               else:
-                   trade_size = trade['size']
-                   print('*Sending:', BotId, data['type'], data['side'], trade_size , data['symbol'])
-                   try:
-                       order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, float(data['price']))
-                       print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
-                   except Exception as e:
-                        message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
-                        print(e, message)
+    if BotId in data['BotName']:
+        if data['amount'] == 'close':
+            trades = exchange.private_get_positions()
+            for trade in trades['result']:
+                if data['symbol'] in trade['future']:
+                   if trade['size'] == 0.0:
+                       message = "No trade open to close, trade not sent. {0}".format(message)
+                   else:
+                       trade_size = trade['size']
+                       print('*Sending:', BotId, data['type'], data['side'], trade_size , data['symbol'])
+                       try:
+                           order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, float(data['price']))
+                           print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
+                       except Exception as e:
+                           message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
+                           print(e, message)
 
-    elif data['amount'] != 'close':
-        new_amount = getNewAmount(data, exchange)
-        print('*Sending:', BotId, data['type'], data['side'], data['amount'], new_amount, data['symbol'])            
-        try:
-            order = exchange.create_order(data['symbol'], data['type'], data['side'], float(new_amount), float(data['price']))
-            print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
-        except Exception as e:
-            message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
-            print(e, message)
+        elif data['amount'] != 'close':
+            new_amount = getNewAmount(data, exchange)
+            print('*Sending:', BotId, data['type'], data['side'], data['amount'], new_amount, data['symbol'])            
+            try:
+                order = exchange.create_order(data['symbol'], data['type'], data['side'], float(new_amount), float(data['price']))
+                print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
+            except Exception as e:
+                message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
+                print(e, message)
+    else:
+        pass
 
