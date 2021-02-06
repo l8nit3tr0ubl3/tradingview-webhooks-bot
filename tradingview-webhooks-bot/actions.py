@@ -28,16 +28,19 @@ def calc_price(given_price):
     return price
 
 def SendToTelegram(message):
-    url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(config.API, config.ID, message)
-    r = requests.get(url)
-    print(r)
+    if UseTelegram == True:
+        url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(config.API, config.ID, message)
+        r = requests.get(url)
+        print(r)
+    else:
+        pass
 
 def getNewAmount(data, exchange):
     ticker = exchange.fetch_ticker(data['symbol'])
     bid = ticker['bid']
     ask = ticker['ask']
     new_amount = 0.0
-    if isinstance(data['amount'], float) == False:
+    if isinstance(data['amount'], str) == True:
         if "%" in data['amount']:
             new_amount = data['amount'].strip('%')
             balance = exchange.fetch_balance()
@@ -87,3 +90,4 @@ def send_order(data, tail, exchange, BotId):
         except Exception as e:
             message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
             print(e, message)
+
