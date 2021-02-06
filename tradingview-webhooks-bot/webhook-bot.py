@@ -40,15 +40,17 @@ def webhook():
                 for account, AccountInfo in config.Accounts.items():
                         exchange = ccxt.ftx({'apiKey': AccountInfo['EXCHANGEAPI'], 'secret': AccountInfo['EXCHANGESECRET'], 'enableRateLimit': True,})
                         send_order(data, tail, exchange, AccountInfo['Name'])
-                SendToTelegram(tail)
+                if config.UseTelegram == True:
+                    SendToTelegram(tail)
                 return '', 200
             else:
                 #pass
                 abort(403)
         else:
-            print(' [ALERT ONLY - NO TRADE] ')
-            print(tail)
-            SendToTelegram(tail)
+            if config.UseTelegram == True:
+                print(' [ALERT ONLY - NO TRADE] ')
+                print(tail)
+                SendToTelegram(tail)
             return '', 200
     else:
         abort(400)
