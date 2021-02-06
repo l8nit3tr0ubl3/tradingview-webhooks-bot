@@ -21,6 +21,8 @@ Use 'close' as trade amount to send closing market order.
 Use 'U' in amount to use USD equivalent for setting size.  
 Use '%' in amount to use % of available balance for setting size.  
 Allow looping through multiple accounts.  
+Set TelegramName in alert to separate alerts to different accounts. List style for multiple ['TG1', 'TG2'].   
+Set BotName in alert to separate orders to different accounts. List style for multiple ['FTX1', 'FTX2'].   
 Set {'type': 'Skip'} to send only Telegram messages with no trades (useful for selling bot access)  
  
 
