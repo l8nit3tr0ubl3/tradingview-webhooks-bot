@@ -27,11 +27,32 @@ def calc_price(given_price):
         price = given_price
     return price
 
+def Get_Screen(URL):
+    driver = webdriver.Chrome()
+    driver.get(URL)
+    sleep(1)
+    driver.get_screenshot_as_file("screenshot.png")
+    driver.quit()
+    
+def sendImage():
+    url = "https://api.telegram.org/bot{0}/sendPhoto".format(API);
+    files = {'photo': open('screenshot.png', 'rb')}
+    data = {'chat_id' : ID}
+    r= requests.post(url, files=files, data=data)
+    print(r.status_code, "ScreenShot Sent...")
+
 def SendToTelegram(message, data):
     for Bot, BotInfo in config.TelegramAccounts.items():
-        if data['TelegramName'] in BotInfo['Name']:
-            url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(BotInfo['API'],BotInfo['ID'], message)
-            r = requests.get(url)
+        if BotInfo['Name'] in data['TelegramName']:
+            if 'Chart=' in message:
+                head, sep, tail = message.partition('Chart=')
+                URL = tail.strip('"')
+                URL = URL.strip("'")
+                Get_Screen(URL)
+                sendImage()
+                url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(API,ID, head)
+            else:
+                url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(API,ID, message)
             print(r)
         else:
             pass
