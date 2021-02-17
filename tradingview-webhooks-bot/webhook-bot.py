@@ -38,21 +38,24 @@ def webhook():
                 print(' [Alert Received] ')
                 print('POST Received:', data)
                 for account, AccountInfo in config.Accounts.items():
+                    if AccountInfo['Name'] in data['BotName']:
+                        print("BotInfo Name {0} MATCHES TelegramName {1}".format(AccountInfo['Name'], data['BotName']))
                         exchange = ccxt.ftx({'apiKey': AccountInfo['EXCHANGEAPI'], 'secret': AccountInfo['EXCHANGESECRET'], 'enableRateLimit': True,})
                         send_order(data, tail, exchange, AccountInfo['Name'])
+                    else:
+                        print("BotInfo Name {0} not match TelegramName {1}".format(AccountInfo['Name'], data['BotName']))
+                        pass
                 if config.UseTelegram == True:
                     SendToTelegram(tail, data)
                 return '', 200
             else:
                 #pass
                 abort(403)
-        else:
-            if config.UseTelegram == True:
-                print(' [ALERT ONLY - NO TRADE] ')
-                print(tail)
-                SendToTelegram(tail, data)
-            else:
-                pass
+        if data['type'] == "Skip":
+            print(' [ALERT ONLY - NO TRADE] ')
+            print('POST Received:', data)
+            print(tail)
+            SendToTelegram(tail, data)
             return '', 200
     else:
         abort(400)
