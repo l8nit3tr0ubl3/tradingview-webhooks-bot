@@ -2,6 +2,10 @@ import ccxt
 import ast
 import requests
 import config as config
+import requests
+from selenium import webdriver
+from time import sleep
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 
 def parse_webhook(webhook_data):
 
@@ -34,7 +38,7 @@ def Get_Screen(URL):
     driver.get_screenshot_as_file("screenshot.png")
     driver.quit()
     
-def sendImage():
+def sendImage(API, ID):
     url = "https://api.telegram.org/bot{0}/sendPhoto".format(API);
     files = {'photo': open('screenshot.png', 'rb')}
     data = {'chat_id' : ID}
@@ -44,18 +48,25 @@ def sendImage():
 def SendToTelegram(message, data):
     for Bot, BotInfo in config.TelegramAccounts.items():
         if BotInfo['Name'] in data['TelegramName']:
+            print("BotInfo Name {0} MATCHES TelegramName {1}".format(BotInfo['Name'], data['TelegramName']))
             if 'Chart=' in message:
                 head, sep, tail = message.partition('Chart=')
                 URL = tail.strip('"')
                 URL = URL.strip("'")
-                Get_Screen(URL)
-                sendImage()
-                url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(API,ID, head)
+                try:
+                    Get_Screen(URL)
+                    sendImage(BotInfo['API'], BotInfo['ID'])
+                except Exception as e:
+                    print(e)
+                    Get_Screen(URL)
+                    sendImage(BotInfo['API'], BotInfo['ID'])
+                url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(BotInfo['API'], BotInfo['ID'], head)
             else:
-                url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(API,ID, message)
+                url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(BotInfo['API'], BotInfo['ID'], message)
+            r = requests.get(url)
             print(r)
         else:
-            pass
+            print("BotInfo Name {0} not match TelegramName {1}".format(BotInfo['Name'], data['TelegramName']))
 
 def getNewAmount(data, exchange):
     ticker = exchange.fetch_ticker(data['symbol'])
@@ -87,32 +98,28 @@ def send_order(data, tail, exchange, BotId):
     :return: the response from the exchange.
     """
     message = tail
-    if BotId in data['BotName']:
-        if data['amount'] == 'close':
-            trades = exchange.private_get_positions()
-            for trade in trades['result']:
-                if data['symbol'] in trade['future']:
-                   if trade['size'] == 0.0:
-                       message = "No trade open to close, trade not sent. {0}".format(message)
-                   else:
-                       trade_size = trade['size']
-                       print('*Sending:', BotId, data['type'], data['side'], trade_size , data['symbol'])
-                       try:
-                           order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, float(data['price']))
-                           print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
-                       except Exception as e:
-                           message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
-                           print(e, message)
-
-        elif data['amount'] != 'close':
-            new_amount = getNewAmount(data, exchange)
-            print('*Sending:', BotId, data['type'], data['side'], data['amount'], new_amount, data['symbol'])            
-            try:
-                order = exchange.create_order(data['symbol'], data['type'], data['side'], float(new_amount), float(data['price']))
-                print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
-            except Exception as e:
-                message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
-                print(e, message)
-    else:
-        pass
+    if data['amount'] == 'close':
+        trades = exchange.private_get_positions()
+        for trade in trades['result']:
+            if data['symbol'] in trade['future']:
+               if trade['size'] == 0.0:
+                   message = "No trade open to close, trade not sent. {0}".format(message)
+               else:
+                   trade_size = trade['size']
+                   print('*Sending:', BotId, data['type'], data['side'], trade_size , data['symbol'])
+                   try:
+                       order = exchange.create_order(data['symbol'], data['type'], data['side'], trade_size, float(data['price']))
+                       print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
+                   except Exception as e:
+                       message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
+                       print(e, message)
+    elif data['amount'] != 'close':
+        new_amount = getNewAmount(data, exchange)
+        print('*Sending:', BotId, data['type'], data['side'], data['amount'], new_amount, data['symbol'])            
+        try:
+            order = exchange.create_order(data['symbol'], data['type'], data['side'], float(new_amount), float(data['price']))
+            print('Exchange Response: Symbol={0}, Trade Type={1}, Trade Side={2}, Trade Status={3} \n'.format(order['symbol'], order['type'], order['side'], order['status']))
+        except Exception as e:
+            message = "ERROR IN OrderSend, CHECK BOT /n {0} /n {1}".format(e, message)
+            print(e, message)
 
