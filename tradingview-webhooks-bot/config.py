@@ -1,7 +1,31 @@
-UseTelegram = True
-TelegramAccounts = { 1: {"Name": "Main Bot", "API": '#BotFather APi Key#', "ID": '-100 #channel ID#'},
-                     #2: {"Name": "Majors", "API": '#BotFather Api Key#', "ID": '-100#Channel ID#'}
+TelegramAccounts = { 1: {"Name": "bot1",
+                         "API": '',
+                         "ID": '-100'},
+                     2: {"Name": "Scalp",
+                         "API": '',
+                         "ID": '-100'},
+                     3: {"Name": "Swing",
+                         "API": '',
+                         "ID": '-100'}
                    }
-Accounts = { 1: {"Name": "BOT_NAME", "EXCHANGEAPI": '*PLACE_API_KEY_HERE', "EXCHANGESECRET": 'PLACE_API_SECRET_HERE'},
-            #2: {"Name": "BOT_NAME", "EXCHANGEAPI": '*PLACE_API_KEY_HERE', "EXCHANGESECRET": 'PLACE_API_SECRET_HERE'}
+Accounts = { 1: {"Name": "Bot1",
+                 "EXCHANGE": "ftx",
+                 "EXCHANGEAPI": '',
+                 "EXCHANGESECRET": '',
+                 'Subaccount': 'No',
+                 'SubName': 'None',
+                 'UseTwitter': 'No',
+                 'UseTelegram': 'Yes'},
+             2: {"Name": "Swing",
+                 "EXCHANGE": "ftx",
+                 "EXCHANGEAPI": '',
+                 "EXCHANGESECRET": '',
+                 'Subaccount': 'Yes',
+                 'SubName': 'Swing',
+                 'UseTwitter': 'Yes',
+                 'UseTelegram': 'Yes'}
             }
+twitter = {'ConsumerKey': '',
+           'ConsumerSecret': '',
+           'AccessToken': '',
+           'AccessSecret': ''}
