@@ -147,30 +147,46 @@ def get_new_amount(data, exchange):
 
     return new_amount
 
-def track_accuracy(market, side, price):
+def get_stats(market, side, price):
     tracking_dict = {}
-    store_file = open('overall_stats.txt', 'w+')
-    if len(store_file) == 0:
-        store_file.write(str(tracking_dict))
-    else:
-        tracking_dict = ast.literal_eval(store_file)
-    if market not in tracking_dict.keys():
-        tracking_dict[market] = {'side': side, 'price': price, 
-        'wins': 0, 'losses': 0, 'accuracy': 0.0}
-    if (market in tracking_dict.keys()) and  (tracking_dict[market][side] == 'sell'):
-        tracking_dict[market] = {'side': side, 'price': price, 
-        'wins': tracking_dict[market][wins], 'losses': tracking_dict[market][losses], 
-        'accuracy': tracking_dict[market][accuracy]}
-    elif (market in tracking_dict.keys()) and  (tracking_dict[market][side] == 'buy'):
-        if tracking_dict[market][price] < price:
-            tracking_dict[market][wins] += 1
-        if tracking_dict[market][price] > price:
-            tracking_dict[market][losses] += 1
-        tracking_dict[market][accuracy] = (wins+losses)/wins
-    store_file.write(tracking_dict)
-    
+    with open('overall_stats.txt') as file:
+        store_file = file.read()
+        tracking_dict = eval(store_file)
+        if market not in tracking_dict:
+            tracking_dict[market] = {'side': None, 'price': price, 'wins': 0, 'losses': 0, 'accuracy': 0.0}
+        file.close()
+    return tracking_dict
 
-def send_order(data, tail, exchange, bot_id):
+def save_stats(tracking_dict):
+    file = open('overall_stats.txt', 'w+')
+    file.write(tracking_dict)
+    file.close
+
+def track_accuracy(market, side, price):
+    tracking_dict = get_stats(market, side, price)
+    if market in tracking_dict.keys():
+        if side == 'buy':
+            if tracking_dict[market]['side'] == 'sell' or tracking_dict[market]['side'] == None:
+                tracking_dict[market]['side'] = side
+                tracking_dict[market]['price'] = price
+            
+        elif side == 'sell':
+            wins = tracking_dict[market]['wins']
+            losses = tracking_dict[market]['losses']
+            if tracking_dict[market]['side'] == 'buy' or tracking_dict[market]['side'] == None:
+                if float(tracking_dict[market]['price']) < float(price):
+                    wins += 1
+                if float(tracking_dict[market]['price']) > float(price):
+                    losses += 1
+                    
+                tracking_dict[market]['accuracy'] = (wins/(losses+wins))*100 if (wins > 0 and losses > 0) else 0.0
+                tracking_dict[market]['side'] = side
+                tracking_dict[market]['price'] = price
+                tracking_dict[market]['wins'] = wins
+                tracking_dict[market]['losses'] = losses
+        save_stats(str(tracking_dict))
+
+def send_order(data, tail, exchange, bot_id, Track):
 
     """
     This function sends the order to the exchange using ccxt.
@@ -207,8 +223,9 @@ def send_order(data, tail, exchange, bot_id):
         except Exception as error:
             message = "ERROR IN OrderSend, CHECK bot /n {0} /n {1}".format(error, message)
             print(error, message)
-    if (data['type'] != "Skip") and (data['Track'] == 'Yes'):
+    if (data['type'] != "Skip") and (Track == 'Yes'):
         try:
-            track_accuracy(data['symbol'], data['side'], float(data['price']))
+            wins, losses = track_accuracy(data['symbol'], data['side'], float(data['price']))
+            print("Wins: {0}, Losses: {1}, Accuracy: {2}%".format(wins, losses, accuracy))
         except Exception as error:
             print(error)
