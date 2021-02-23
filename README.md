@@ -24,7 +24,9 @@ Allow looping through multiple accounts.
 Set TelegramName in alert to separate alerts to different accounts. List style for multiple ['TG1', 'TG2'].   
 Set BotName in alert to separate orders to different accounts. List style for multiple ['FTX1', 'FTX2'].   
 Set {'type': 'Skip'} to send only Telegram messages with no trades (useful for selling bot access)  
-When sendnig to Telegram, allow screenshots of chart (via selenium+chromedriver)  
+When sending to Telegram, allow screenshots of chart (via selenium+chromedriver)  
+Post to Twitter   
+Forward testing stats in beta testing. (Currently only one TF/strategy per market can be tracked)   
  
 
 ## Quickstart Using Pipenv
