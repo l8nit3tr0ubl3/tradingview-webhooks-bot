@@ -6,6 +6,7 @@ from time import sleep
 import requests
 import tweepy
 import config
+import collections
 from selenium import webdriver
 
 def parse_webhook(webhook_data):
@@ -41,10 +42,13 @@ def print_stats():
         store_file = file.read()
     if len(store_file) > 0:
         tracking_dict = eval(store_file)
-    for line, info in tracking_dict.items():
-        print("*{0}: Total trades:{1}, Wins:{2}, Losses: {3}, Accuracy:{4}".format(line, info['total'],
-                                                                                   info['wins'], info['losses'],
-                                                                                   info['accuracy']))
+    for BotId in tracking_dict:
+        print(BotId)
+        alphabetized = collections.OrderedDict(sorted(BotId.items()))
+        for line, info in alphabetized.items():
+            print("*  {0}: Total trades:{1}, Wins:{2}, Losses: {3}, Accuracy:{4}".format(line, info['total'],
+                                                                                       info['wins'], info['losses'],
+                                                                                       info['accuracy']))
     print("*"*60)
 
 def post_tweet(tweet):
@@ -161,14 +165,14 @@ def get_new_amount(data, exchange):
 
     return new_amount
 
-def get_stats(market, side, price):
+def get_stats(bot_id, market, side, price):
     tracking_dict = {}
     with open('overall_stats.txt') as file:
         store_file = file.read()
         if len(store_file) > 0:
             tracking_dict = eval(store_file)
-        if market not in tracking_dict.keys():
-            tracking_dict[market] = {'side': None, 'price': price, 'total': 0, 'wins': 0, 'losses': 0, 'accuracy': 0.0}
+        if market not in tracking_dict[bot_id].keys():
+            tracking_dict[bot_id][market] = {'side': None, 'price': price, 'total': 0, 'wins': 0, 'losses': 0, 'accuracy': 0.0}
     return tracking_dict
 
 def save_stats(tracking_dict):
@@ -177,31 +181,30 @@ def save_stats(tracking_dict):
     file.close
 
 def track_accuracy(bot_id, market, side, price):
-    market = market+"_"+bot_id
-    tracking_dict = get_stats(market, side, price)
-    wins = tracking_dict[market]['wins']
-    losses = tracking_dict[market]['losses']
-    accuracy = tracking_dict[market]['accuracy']
-    if market in tracking_dict.keys():
+    tracking_dict = get_stats(bot_id, market, side, price)
+    wins = tracking_dict[bot_id][market]['wins']
+    losses = tracking_dict[bot_id][market]['losses']
+    accuracy = tracking_dict[bot_id][market]['accuracy']
+    if market in tracking_dict[bot_id].keys():
         if side == 'buy':
-            if tracking_dict[market]['side'] == 'sell' or tracking_dict[market]['side'] == None:
-                tracking_dict[market]['side'] = side
-                tracking_dict[market]['price'] = price
+            if tracking_dict[bot_id][market]['side'] == 'sell' or tracking_dict[market]['side'] == None:
+                tracking_dict[bot_id][market]['side'] = side
+                tracking_dict[bot_id][market]['price'] = price
             
         elif side == 'sell':
-            if tracking_dict[market]['side'] == 'buy' or tracking_dict[market]['side'] == None:
-                if float(tracking_dict[market]['price']) < float(price):
+            if tracking_dict[bot_id][market]['side'] == 'buy' or tracking_dict[bot_id][market]['side'] == None:
+                if float(tracking_dict[bot_id][market]['price']) < float(price):
                     wins += 1
-                if float(tracking_dict[market]['price']) > float(price):
+                if float(tracking_dict[bot_id][market]['price']) > float(price):
                     losses += 1
                     
-                tracking_dict[market]['accuracy'] = (wins/(losses+wins))*100 if (wins > 0) else 0.0
-                tracking_dict[market]['side'] = side
-                tracking_dict[market]['price'] = price
-                tracking_dict[market]['wins'] = wins
-                tracking_dict[market]['losses'] = losses
-                accuracy = tracking_dict[market]['accuracy']
-        tracking_dict[market]['wins'] = wins + losses
+                tracking_dict[bot_id][market]['accuracy'] = (wins/(losses+wins))*100 if (wins > 0) else 0.0
+                tracking_dict[bot_id][market]['side'] = side
+                tracking_dict[bot_id][market]['price'] = price
+                tracking_dict[bot_id][market]['wins'] = wins
+                tracking_dict[bot_id][market]['losses'] = losses
+                accuracy = tracking_dict[bot_id][market]['accuracy']
+        tracking_dict[bot_id][market]['total'] = wins + losses
         save_stats(str(tracking_dict))
 
 def send_order(data, tail, exchange, bot_id, Track):
