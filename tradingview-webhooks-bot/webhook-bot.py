@@ -3,12 +3,22 @@ Tradingview-webhooks-bot is a python bot that works with tradingview's webhook a
 This bot is not affiliated with tradingview and was originally created by @robswc.
 It has been modified for PERSONAL USE by l8nit3.
 """
-from actions import send_order, parse_webhook, send_to_telegram, post_tweet
+from actions import send_order, parse_webhook, send_to_telegram, post_tweet, print_stats
 from auth import get_token
 from flask import Flask, request, abort
 import config
 import ccxt
+from pynput import keyboard
 
+def on_press(key):
+    try:
+        if key.char == 's':
+            print_stats()
+    except AttributeError:
+        pass
+
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
 # Create Flask object called app.
 app = Flask(__name__)
 
@@ -29,7 +39,7 @@ def webhook():
         if (data['type'] != "Skip") and (get_token() == data['key']):
             # Check that the key is correct
             print(' [Alert Received] ')
-            print('POST Received:', data)
+            print(tail)
             for account, account_info in config.Accounts.items():
                 if account_info['Name'] in data['BotName']:
                     exchange = ccxt.ftx({'apiKey': account_info['exchangeapi'],
@@ -37,9 +47,9 @@ def webhook():
                     'enableRateLimit': True,})
                     if account_info['Subaccount'] == 'Yes':
                         exchange.headers = {'FTX-SUBACCOUNT': account_info['SubName'],}
-                    wins, losses, accuracy = send_order(data, tail, exchange, account_info['Name'], account_info['Track'])
+                    send_order(data, tail, exchange, account_info['Name'], account_info['Track'])
                     if account_info['UseTelegram'] == 'Yes':
-                        message = send_to_telegram(tail, data)
+                        send_to_telegram(tail, data)
                     if account_info['UseTwitter'] == 'Yes':
                         post_tweet(message)
                 else:
@@ -48,13 +58,13 @@ def webhook():
 
         if data['type'] == "Skip":
             print(' [ALERT ONLY - NO TRADE] ')
-            print('POST Received:', data)
             print(tail)
             for account, account_info in config.Accounts.items():
-                if account_info['UseTelegram'] == 'Yes':
-                    message = send_to_telegram(tail, data)
-                if account_info['UseTwitter'] == 'Yes':
-                    post_tweet(message)
+                if account_info['Name'] in data['BotName']:
+                    if account_info['UseTelegram'] == 'Yes':
+                        send_to_telegram(tail, data)
+                    if account_info['UseTwitter'] == 'Yes':
+                        post_tweet(message)
         print('*'*60, '/n')
         return '', 200
     else:
@@ -64,3 +74,5 @@ def webhook():
 if __name__ == '__main__':
     """Run app"""
     app.run()
+
+listener.stop()
