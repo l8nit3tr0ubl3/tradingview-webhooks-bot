@@ -10,15 +10,6 @@ import config
 import ccxt
 from pynput import keyboard
 
-def on_press(key):
-    try:
-        if key.char == 's':
-            print_stats()
-    except AttributeError:
-        pass
-
-listener = keyboard.Listener(on_press=on_press)
-listener.start()
 # Create Flask object called app.
 app = Flask(__name__)
 
@@ -70,6 +61,15 @@ def webhook():
     else:
         abort(400)
 
+def on_press(key):
+    try:
+        if key.char == 's':
+            print_stats()
+    except AttributeError:
+        pass
+
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
 
 if __name__ == '__main__':
     """Run app"""
