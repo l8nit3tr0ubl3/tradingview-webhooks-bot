@@ -32,12 +32,32 @@ def calc_price(given_price):
         price = given_price
     return price
 
+def print_stats():
+    print("*"*60)
+    print("*Accuracy Statistics")
+    print("*"*60)
+    tracking_dict = {}
+    with open('overall_stats.txt') as file:
+        store_file = file.read()
+    if len(store_file) > 0:
+        tracking_dict = eval(store_file)
+    for line, info in tracking_dict.items():
+        print("*{0}: Total trades:{1}, Wins:{2}, Losses: {3}, Accuracy:{4}".format(line, info['total'],
+                                                                                   info['wins'], info['losses'],
+                                                                                   info['accuracy']))
+    print("*"*60)
+
 def post_tweet(tweet):
     """
     Takes api and Consumer keys generated on deleveoper.twitter.com
     to post an alert as a tweet.
     :param tweet: The alert message youd like sent through.
     """
+    if 'Chart=' in tweet:
+                head, sep, tail = tweet.partition('Chart=')
+                tweet = head.strip('"')
+                tweet = tweet.strip("'")
+                tweet = tweet + "\nTelegram Group For Signals ONLY:\nhttps://t.me/joinchat/UMbqiPu4AEpqHaVE"
     twitter_auth_keys = {
         "consumer_key"        : config.twitter['ConsumerKey'],
         "consumer_secret"     : config.twitter['Consumersecret'],
@@ -57,7 +77,7 @@ def post_tweet(tweet):
     try:
         status = api.update_status(status=tweet)
     except Exception as error:
-        print(error, status)
+        print(error)
     print('Tweet Sent')
 
 def get_screen(url):
@@ -94,30 +114,24 @@ def send_to_telegram(message, data):
     """
     for bot, bot_info in config.TelegramAccounts.items():
         if bot_info['Name'] in data['TelegramName']:
-            print("bot_info Name {0} MATCHES TelegramName {1}".format(bot_info['Name'],
-            data['TelegramName']))
             string = ""
             if 'Chart=' in message:
                 head, sep, tail = message.partition('Chart=')
                 url = tail.strip('"')
                 url = url.strip("'")
-                try:
-                    get_screen(url)
-                    send_image(bot_info['api'], bot_info['id'])
-                except Exception as e:
-                    print(e)
-                    get_screen(url)
-                    send_image(bot_info['api'], bot_info['id'])
+                #try:
+                    #get_screen(url)
+                    #send_image(bot_info['api'], bot_info['id'])
+                #except Exception as e:
+                    #print(e)
+                    #get_screen(url)
+                    #send_image(bot_info['api'], bot_info['id'])'''
                 url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(
                 bot_info['api'], bot_info['id'], head)
-                string = head
             else:
                 url = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}".format(
                 bot_info['api'], bot_info['id'], message)
-                string = message
             r = requests.get(url)
-            print(r)
-            return string
 
 def get_new_amount(data, exchange):
     """
@@ -151,10 +165,10 @@ def get_stats(market, side, price):
     tracking_dict = {}
     with open('overall_stats.txt') as file:
         store_file = file.read()
-        tracking_dict = eval(store_file)
-        if market not in tracking_dict:
-            tracking_dict[market] = {'side': None, 'price': price, 'wins': 0, 'losses': 0, 'accuracy': 0.0}
-        file.close()
+        if len(store_file) > 0:
+            tracking_dict = eval(store_file)
+        if market not in tracking_dict.keys():
+            tracking_dict[market] = {'side': None, 'price': price, 'total': 0, 'wins': 0, 'losses': 0, 'accuracy': 0.0}
     return tracking_dict
 
 def save_stats(tracking_dict):
@@ -162,8 +176,12 @@ def save_stats(tracking_dict):
     file.write(tracking_dict)
     file.close
 
-def track_accuracy(market, side, price):
+def track_accuracy(bot_id, market, side, price):
+    market = market+"_"+bot_id
     tracking_dict = get_stats(market, side, price)
+    wins = tracking_dict[market]['wins']
+    losses = tracking_dict[market]['losses']
+    accuracy = tracking_dict[market]['accuracy']
     if market in tracking_dict.keys():
         if side == 'buy':
             if tracking_dict[market]['side'] == 'sell' or tracking_dict[market]['side'] == None:
@@ -171,19 +189,19 @@ def track_accuracy(market, side, price):
                 tracking_dict[market]['price'] = price
             
         elif side == 'sell':
-            wins = tracking_dict[market]['wins']
-            losses = tracking_dict[market]['losses']
             if tracking_dict[market]['side'] == 'buy' or tracking_dict[market]['side'] == None:
                 if float(tracking_dict[market]['price']) < float(price):
                     wins += 1
                 if float(tracking_dict[market]['price']) > float(price):
                     losses += 1
                     
-                tracking_dict[market]['accuracy'] = (wins/(losses+wins))*100 if (wins > 0 and losses > 0) else 0.0
+                tracking_dict[market]['accuracy'] = (wins/(losses+wins))*100 if (wins > 0) else 0.0
                 tracking_dict[market]['side'] = side
                 tracking_dict[market]['price'] = price
                 tracking_dict[market]['wins'] = wins
                 tracking_dict[market]['losses'] = losses
+                accuracy = tracking_dict[market]['accuracy']
+        tracking_dict[market]['wins'] = wins + losses
         save_stats(str(tracking_dict))
 
 def send_order(data, tail, exchange, bot_id, Track):
@@ -225,7 +243,6 @@ def send_order(data, tail, exchange, bot_id, Track):
             print(error, message)
     if (data['type'] != "Skip") and (Track == 'Yes'):
         try:
-            wins, losses = track_accuracy(data['symbol'], data['side'], float(data['price']))
-            print("Wins: {0}, Losses: {1}, Accuracy: {2}%".format(wins, losses, accuracy))
+            track_accuracy(bot_id, data['symbol'], data['side'], float(data['price']))
         except Exception as error:
             print(error)
