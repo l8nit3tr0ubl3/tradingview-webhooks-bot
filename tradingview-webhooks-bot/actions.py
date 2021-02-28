@@ -45,7 +45,8 @@ def print_stats():
         tracking_dict = eval(store_file)
     for bot_id in tracking_dict:
         print("{0} stats:".format(bot_id))
-        for line, info in tracking_dict[bot_id].items():
+        alphabetized = collections.OrderedDict(sorted(tracking_dict[bot_id].items()))
+        for line, info in alphabetized:
             print("*  {0}: Total trades:{1}, Wins:{2}, Losses: {3}, Accuracy:{4}".format(line, info['total'], info['wins'], info['losses'], info['accuracy']))
     print("*"*60)
 
@@ -169,8 +170,11 @@ def get_stats(bot_id, market, price):
         store_file = file.read()
         if len(store_file) > 0:
             tracking_dict = eval(store_file)
-        if market not in tracking_dict:
-            tracking_dict[bot_id] = {market: {'side': None, 'price': price, 'total': 0, 'wins': 0, 'losses': 0, 'accuracy': 0.0}}
+        if bot_id not in tracking_dict:
+            tracking_dict[bot_id] = {}
+        if market not in tracking_dict[bot_id]:
+            tracking_dict[bot_id][market] = {'side': None, 'price': price, 'total': 0, 'wins': 0, 'losses': 0, 'accuracy': 0.0}
+            print(tracking_dict)
     return tracking_dict
 
 def save_stats(tracking_dict):
