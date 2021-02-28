@@ -43,13 +43,10 @@ def print_stats():
         store_file = file.read()
     if len(store_file) > 0:
         tracking_dict = eval(store_file)
-    for BotId in tracking_dict:
-        print(BotId)
-        alphabetized = collections.OrderedDict(sorted(BotId.items()))
-        for line, info in alphabetized.items():
-            print("*  {0}: Total trades:{1}, Wins:{2}, Losses: {3}, Accuracy:{4}".format(line, info['total'],
-                                                                                       info['wins'], info['losses'],
-                                                                                       info['accuracy']))
+    for bot_id in tracking_dict:
+        print("{0} stats:".format(bot_id))
+        for line, info in tracking_dict[bot_id].items():
+            print("*  {0}: Total trades:{1}, Wins:{2}, Losses: {3}, Accuracy:{4}".format(line, info['total'], info['wins'], info['losses'], info['accuracy']))
     print("*"*60)
 
 def post_tweet(tweet):
@@ -172,8 +169,8 @@ def get_stats(bot_id, market, price):
         store_file = file.read()
         if len(store_file) > 0:
             tracking_dict = eval(store_file)
-        if market not in tracking_dict[bot_id].keys():
-            tracking_dict[bot_id][market] = {'side': None, 'price': price, 'total': 0, 'wins': 0, 'losses': 0, 'accuracy': 0.0}
+        if market not in tracking_dict:
+            tracking_dict[bot_id] = {market: {'side': None, 'price': price, 'total': 0, 'wins': 0, 'losses': 0, 'accuracy': 0.0}}
     return tracking_dict
 
 def save_stats(tracking_dict):
@@ -187,7 +184,7 @@ def track_accuracy(bot_id, market, side, price):
     tracking_dict = get_stats(bot_id, market, price)
     wins = tracking_dict[bot_id][market]['wins']
     losses = tracking_dict[bot_id][market]['losses']
-    if market in tracking_dict[bot_id].keys():
+    if market in tracking_dict[bot_id]:
         if side == 'buy':
             if tracking_dict[bot_id][market]['side'] == 'sell' or tracking_dict[market]['side'] == None:
                 tracking_dict[bot_id][market]['side'] = side
